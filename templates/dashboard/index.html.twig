@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block body %}
+<h1>Dashboard Veille Média</h1>
+
+<form method="get">
+    <select name="question" onchange="this.form.submit()">
+        <option value="">-- Choisir une question --</option>
+        {% for question in questions %}
+            <option value="{{ question }}" {% if question == selectedQuestion %}selected{% endif %}>{{ question }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+{% if result %}
+    {# KPI #}
+    {% include 'components/kpi.html.twig' with { title: 'Total réponses', value: result.totalResponses } %}
+
+    {# Chart #}
+    {% include 'components/chart_doughnut.html.twig' with { labels: result.labels, data: result.frequencies, id: 'modalitiesChart' } %}
+
+    {# Table #}
+    {% include 'components/table_modalities.html.twig' with { modalities: result.modalities } %}
+{% else %}
+    <p>Veuillez sélectionner une question pour afficher les résultats.</p>
+{% endif %}
+
+{% endblock %}

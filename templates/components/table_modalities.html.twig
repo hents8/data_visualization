@@ -1,0 +1,20 @@
+{# Expects: modalities (array of ['label','count','percentage']) #}
+
+<table class="table-modalities">
+    <thead>
+        <tr>
+            <th>Modality</th>
+            <th>Frequency</th>
+            <th>Percentage (%)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in modalities %}
+            <tr>
+                <td>{{ item.label }}</td>
+                <td>{{ item.count }}</td>
+                <td>{{ item.percentage }}%</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
