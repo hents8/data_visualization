@@ -31,7 +31,7 @@
 
         h1 {
             font-size: 24px;
-            margin: 0;
+            margin: 0 0 20px 0;
         }
 
         .highlight {
@@ -86,6 +86,46 @@
         .card.large {
             flex: 2;
         }
+
+        /* =========================
+           DASHBOARD LEFT/RIGHT PANELS
+           ========================= */
+        .page-container {
+            display: flex;
+            gap: 24px;
+            flex-wrap: nowrap;           /* force côte à côte */
+            align-items: flex-start;     /* aligne les panels en haut */
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .panel {
+            flex: 1 1 0;                /* grow, shrink, base */
+            max-width: 50%;             /* moitié de la largeur */
+            min-width: 300px;           /* ne pas rétrécir trop */
+            box-sizing: border-box;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.08);
+            min-height: 400px;          /* hauteur minimale si vide */
+        }
+
+        @media (max-width: 900px) {
+            .page-container {
+                flex-direction: column;  /* empile vertical sur mobile */
+            }
+            .panel {
+                max-width: 100%;
+            }
+        }
+
+        /* Graphiques Chart.js */
+        canvas {
+            width: 100% !important;
+            height: 300px;
+        }
+
     </style>
     {% endblock %}
 </head>

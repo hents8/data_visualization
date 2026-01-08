@@ -3,28 +3,115 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block body %}
-<h1>Dashboard Veille Média</h1>
+<div class="dashboard">
+    <h1>Dashboard Veille Média</h1>
 
-<form method="get">
-    <select name="question" onchange="this.form.submit()">
-        <option value="">-- Choisir une question --</option>
-        {% for question in questions %}
-            <option value="{{ question }}" {% if question == selectedQuestion %}selected{% endif %}>{{ question }}</option>
-        {% endfor %}
-    </select>
-</form>
+    <div class="page-container">
 
-{% if result %}
-    {# KPI #}
-    {% include 'components/kpi.html.twig' with { title: 'Total réponses', value: result.totalResponses } %}
+        {# === PANEL GAUCHE === #}
+        <section class="panel">
+            <h2>Panel Gauche</h2>
 
-    {# Chart #}
-    {% include 'components/chart_doughnut.html.twig' with { labels: result.labels, data: result.frequencies, id: 'modalitiesChart' } %}
+            <form method="get">
+                <label>Mois</label>
+                <select name="month_left" onchange="this.form.submit()">
+                    <option value="">-- Tous --</option>
+                    {% for num, name in months %}
+                        <option value="{{ num }}" {{ num == selectedMonthLeft ? 'selected' : '' }}>{{ name }}</option>
+                    {% endfor %}
+                </select>
 
-    {# Table #}
-    {% include 'components/table_modalities.html.twig' with { modalities: result.modalities } %}
-{% else %}
-    <p>Veuillez sélectionner une question pour afficher les résultats.</p>
-{% endif %}
+                <label>Année</label>
+                <select name="year_left" onchange="this.form.submit()">
+                    <option value="">-- Tous --</option>
+                    {% for y in years %}
+                        <option value="{{ y }}" {{ y == selectedYearLeft ? 'selected' : '' }}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </form>
 
+            {% for question, result in resultsLeft %}
+                <h3>{{ question }}</h3>
+
+                {% if result.labels is not empty and result.frequencies is not empty %}
+                    {% set chartType = (question in ['Media','Citée','Tonalité']) ? 'doughnut' : 'bar' %}
+                    {% if chartType == 'doughnut' %}
+                        {% include 'components/chart_doughnut.html.twig' with {
+                            labels: result.labels,
+                            data: result.frequencies,
+                            id: 'chartLeft' ~ loop.index
+                        } %}
+                    {% else %}
+                        {% include 'components/chart.html.twig' with {
+                            labels: result.labels,
+                            data: result.frequencies,
+                            id: 'chartLeft' ~ loop.index
+                        } %}
+                    {% endif %}
+
+                    {# KPI sous le graphique #}
+                    {% include 'components/kpi.html.twig' with {
+                        title: 'Total réponses',
+                        value: result.totalResponses
+                    } %}
+                {% else %}
+                    <p>Aucune donnée pour cette sélection.</p>
+                {% endif %}
+            {% endfor %}
+        </section>
+
+        {# === PANEL DROIT === #}
+        <section class="panel">
+            <h2>Panel Droit</h2>
+
+            <form method="get">
+                <label>Mois</label>
+                <select name="month_right" onchange="this.form.submit()">
+                    <option value="">-- Tous --</option>
+                    {% for num, name in months %}
+                        <option value="{{ num }}" {{ num == selectedMonthRight ? 'selected' : '' }}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+
+                <label>Année</label>
+                <select name="year_right" onchange="this.form.submit()">
+                    <option value="">-- Tous --</option>
+                    {% for y in years %}
+                        <option value="{{ y }}" {{ y == selectedYearRight ? 'selected' : '' }}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            {% for question, result in resultsRight %}
+                <h3>{{ question }}</h3>
+
+                {% if result.labels is not empty and result.frequencies is not empty %}
+                    {% set chartType = (question in ['Media','Citée','Tonalité']) ? 'doughnut' : 'bar' %}
+                    {% if chartType == 'doughnut' %}
+                        {% include 'components/chart_doughnut.html.twig' with {
+                            labels: result.labels,
+                            data: result.frequencies,
+                            id: 'chartRight' ~ loop.index
+                        } %}
+                    {% else %}
+                        {% include 'components/chart.html.twig' with {
+                            labels: result.labels,
+                            data: result.frequencies,
+                            id: 'chartRight' ~ loop.index
+                        } %}
+                    {% endif %}
+
+                    {# KPI sous le graphique #}
+                    {% include 'components/kpi.html.twig' with {
+                        title: 'Total réponses',
+                        value: result.totalResponses
+                    } %}
+                {% else %}
+                    <p>Aucune donnée pour cette sélection.</p>
+                {% endif %}
+            {% endfor %}
+        </section>
+
+    </div>
+</div>
 {% endblock %}

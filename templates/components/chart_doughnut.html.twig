@@ -1,7 +1,7 @@
 {# Expects: labels (array), data (array) #}
 
 <div class="chart-container">
-    <canvas id="{{ id|default('chart-doughnut') }}"></canvas>
+   <canvas id="{{ id }}" width="400" height="400"></canvas>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -21,6 +21,7 @@
             }]
         },
         options: {
+			maintainAspectRatio: false,
             responsive: true,
             plugins: {
                 datalabels: {

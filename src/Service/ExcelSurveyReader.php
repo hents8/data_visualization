@@ -9,8 +9,6 @@ use Symfony\Component\HttpKernel\KernelInterface;
 class ExcelSurveyReader
 {
     private string $filePath;
-
-    // On stocke la feuille pour ne pas recharger le fichier plusieurs fois
     private ?\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet = null;
 
     public function __construct(KernelInterface $kernel)
@@ -22,11 +20,10 @@ class ExcelSurveyReader
     {
         if ($this->sheet === null) {
             $reader = new Xlsx();
-            $reader->setReadDataOnly(true); // optimisation mémoire
+            $reader->setReadDataOnly(true);
             $spreadsheet = $reader->load($this->filePath);
             $this->sheet = $spreadsheet->getActiveSheet();
         }
-
         return $this->sheet;
     }
 
@@ -34,49 +31,85 @@ class ExcelSurveyReader
     {
         $sheet = $this->getSheet();
         $questions = [];
-
-        // Lecture de la première ligne uniquement
-        foreach ($sheet->getRowIterator(1, 1) as $row) {
+        foreach ($sheet->getRowIterator(1,1) as $row) {
             foreach ($row->getCellIterator() as $cell) {
-                $questions[] = (string) $cell->getValue();
+                $questions[] = (string)$cell->getValue();
             }
         }
-
         return $questions;
     }
 
-    public function getQuestionResult(string $question): QuestionResult
+    public function getYears(): array
     {
         $sheet = $this->getSheet();
         $questions = $this->getQuestions();
+        $yearColIndex = array_search('Year', $questions, true);
+        if ($yearColIndex === false) return [];
 
-        $questionIndex = array_search($question, $questions, true);
-        $result = new QuestionResult($question);
-
-        if ($questionIndex === false) {
-            return $result;
-        }
-
-        $columnIndex = $questionIndex + 1;
+        $yearCol = Coordinate::stringFromColumnIndex($yearColIndex + 1);
+        $years = [];
         $totalRows = $sheet->getHighestRow();
-        $counts = [];
 
         for ($row = 2; $row <= $totalRows; $row++) {
-            $column = Coordinate::stringFromColumnIndex($columnIndex);
-            $value = $sheet->getCell($column . $row)->getValue();
-
-            if ($value !== null && $value !== '') {
-                $counts[$value] = ($counts[$value] ?? 0) + 1;
-            }
+            $y = (int)$sheet->getCell($yearCol . $row)->getValue();
+            if ($y) $years[$y] = $y;
         }
 
-        $total = array_sum($counts); // total réponses
+        ksort($years);
+        return array_values($years);
+    }
 
-        foreach ($counts as $label => $count) {
-            $percentage = $total > 0 ? round(($count / $total) * 100, 2) : 0;
-            $result->addModality($label, $count, $percentage);
-        }
+   public function getQuestionResult(string $question, ?int $year = null, ?int $month = null): QuestionResult
+{
+    $sheet = $this->getSheet();
+    $questions = $this->getQuestions();
 
+    $questionIndex = array_search($question, $questions, true);
+    $yearColumnIndex  = array_search('Year', $questions, true);
+    $monthColumnIndex = array_search('Month', $questions, true);
+
+    $result = new QuestionResult($question);
+
+    if ($questionIndex === false || $yearColumnIndex === false || $monthColumnIndex === false) {
         return $result;
     }
+
+    $columnIndex = $questionIndex + 1;
+    $yearColumn  = Coordinate::stringFromColumnIndex($yearColumnIndex + 1);
+    $monthColumn = Coordinate::stringFromColumnIndex($monthColumnIndex + 1);
+
+    $totalRows = $sheet->getHighestRow();
+    $counts = [];
+
+    for ($row = 2; $row <= $totalRows; $row++) {
+
+        $rowYear  = (int)$sheet->getCell($yearColumn . $row)->getValue();
+        $rowMonth = (int)$sheet->getCell($monthColumn . $row)->getValue();
+
+        if ($year !== null && $rowYear !== $year) {
+            continue;
+        }
+
+        if ($month !== null && $rowMonth !== $month) {
+            continue;
+        }
+
+        $column = Coordinate::stringFromColumnIndex($columnIndex);
+        $value = $sheet->getCell($column . $row)->getValue();
+
+        if ($value !== null && $value !== '') {
+            $counts[$value] = ($counts[$value] ?? 0) + 1;
+        }
+    }
+
+    $total = array_sum($counts);
+
+    foreach ($counts as $label => $count) {
+        $percentage = $total > 0 ? round(($count / $total) * 100, 2) : 0;
+        $result->addModality($label, $count, $percentage);
+    }
+
+    return $result;
+}
+
 }

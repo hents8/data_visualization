@@ -1,0 +1,37 @@
+{# templates/components/chart_bar.html.twig #}
+<div class="chart-container" style="position: relative; width: 100%; height: 300px; margin-bottom: 30px;">
+    <canvas id="{{ id }}"></canvas>
+</div>
+
+<script>
+const ctx_{{ id }} = document.getElementById('{{ id }}').getContext('2d');
+
+new Chart(ctx_{{ id }}, {
+    type: 'bar',
+    data: {
+        labels: {{ labels|json_encode|raw }},
+        datasets: [{
+            label: 'Effectifs',
+            data: {{ data|json_encode|raw }},
+            backgroundColor: [
+                '#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF',
+                '#FF9F40','#C9CBCF','#FF6384','#36A2EB','#FFCE56'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            datalabels: { display: false }  // pas de datalabels sur bar
+        },
+        scales: {
+            y: { beginAtZero: true },
+            x: { ticks: { autoSkip: false } }  // pour afficher toutes les catégories
+        }
+    },
+    plugins: [ChartDataLabels]
+});
+</script>
