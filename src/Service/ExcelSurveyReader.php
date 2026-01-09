@@ -10,6 +10,7 @@ class ExcelSurveyReader
 {
     private string $filePath;
     private ?\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet = null;
+    private ?array $dataCache = null; // Stockage du tableau complet pour éviter plusieurs lectures
 
     public function __construct(KernelInterface $kernel)
     {
@@ -31,7 +32,7 @@ class ExcelSurveyReader
     {
         $sheet = $this->getSheet();
         $questions = [];
-        foreach ($sheet->getRowIterator(1,1) as $row) {
+        foreach ($sheet->getRowIterator(1, 1) as $row) {
             foreach ($row->getCellIterator() as $cell) {
                 $questions[] = (string)$cell->getValue();
             }
@@ -59,57 +60,82 @@ class ExcelSurveyReader
         return array_values($years);
     }
 
-   public function getQuestionResult(string $question, ?int $year = null, ?int $month = null): QuestionResult
+    /**
+     * Récupère le fichier Excel sous forme de tableau pour réutilisation multiple
+     */
+public function getDataArray(): array
 {
+    if ($this->dataCache !== null) {
+        return $this->dataCache;
+    }
+
     $sheet = $this->getSheet();
-    $questions = $this->getQuestions();
+    $highestRow = $sheet->getHighestRow();
+    $highestColumn = $sheet->getHighestColumn();
+    $highestColumnIndex = Coordinate::columnIndexFromString($highestColumn);
 
-    $questionIndex = array_search($question, $questions, true);
-    $yearColumnIndex  = array_search('Year', $questions, true);
-    $monthColumnIndex = array_search('Month', $questions, true);
+    $data = [];
+    for ($row = 2; $row <= $highestRow; $row++) {
+        $rowData = [];
+        for ($col = 1; $col <= $highestColumnIndex; $col++) {
+            $cellCoordinate = Coordinate::stringFromColumnIndex($col) . $row;
+            // Index 0-based pour correspondre à getQuestions()
+            $rowData[$col - 1] = $sheet->getCell($cellCoordinate)->getValue();
+        }
+        $data[] = $rowData;
+    }
 
-    $result = new QuestionResult($question);
+    $this->dataCache = $data;
+    return $data;
+}
 
-    if ($questionIndex === false || $yearColumnIndex === false || $monthColumnIndex === false) {
+
+
+    /**
+     * Calcule le résultat d'une question depuis un tableau Excel
+     */
+    public function getQuestionResultFromArray(string $question, array $data, ?int $year = null, ?int $month = null): QuestionResult
+    {
+        $questions = $this->getQuestions();
+
+        $questionIndex = array_search($question, $questions, true);
+        $yearIndex     = array_search('Year', $questions, true);
+        $monthIndex    = array_search('Month', $questions, true);
+
+        $result = new QuestionResult($question);
+        if ($questionIndex === false || $yearIndex === false || $monthIndex === false) {
+            return $result;
+        }
+
+        $counts = [];
+        foreach ($data as $row) {
+            $rowYear  = (int)($row[$yearIndex] ?? 0);
+            $rowMonth = (int)($row[$monthIndex] ?? 0);
+
+            if ($year !== null && $rowYear !== $year) continue;
+            if ($month !== null && $rowMonth !== $month) continue;
+
+            $value = $row[$questionIndex] ?? null;
+            if ($value !== null && $value !== '') {
+                $counts[$value] = ($counts[$value] ?? 0) + 1;
+            }
+        }
+
+        $total = array_sum($counts);
+        foreach ($counts as $label => $count) {
+            $percentage = $total > 0 ? round(($count / $total) * 100, 2) : 0;
+            $result->addModality($label, $count, $percentage);
+        }
+
         return $result;
     }
 
-    $columnIndex = $questionIndex + 1;
-    $yearColumn  = Coordinate::stringFromColumnIndex($yearColumnIndex + 1);
-    $monthColumn = Coordinate::stringFromColumnIndex($monthColumnIndex + 1);
-
-    $totalRows = $sheet->getHighestRow();
-    $counts = [];
-
-    for ($row = 2; $row <= $totalRows; $row++) {
-
-        $rowYear  = (int)$sheet->getCell($yearColumn . $row)->getValue();
-        $rowMonth = (int)$sheet->getCell($monthColumn . $row)->getValue();
-
-        if ($year !== null && $rowYear !== $year) {
-            continue;
-        }
-
-        if ($month !== null && $rowMonth !== $month) {
-            continue;
-        }
-
-        $column = Coordinate::stringFromColumnIndex($columnIndex);
-        $value = $sheet->getCell($column . $row)->getValue();
-
-        if ($value !== null && $value !== '') {
-            $counts[$value] = ($counts[$value] ?? 0) + 1;
-        }
+    /**
+     * Ancienne méthode conservée pour compatibilité (lit directement depuis Excel)
+     */
+    public function getQuestionResult(string $question, ?int $year = null, ?int $month = null): QuestionResult
+    {
+        $data = $this->getDataArray();
+        return $this->getQuestionResultFromArray($question, $data, $year, $month);
     }
-
-    $total = array_sum($counts);
-
-    foreach ($counts as $label => $count) {
-        $percentage = $total > 0 ? round(($count / $total) * 100, 2) : 0;
-        $result->addModality($label, $count, $percentage);
-    }
-
-    return $result;
-}
-
 }

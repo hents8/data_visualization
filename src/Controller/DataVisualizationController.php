@@ -11,51 +11,65 @@ class DataVisualizationController extends AbstractController
     #[Route('/', name: 'home')]
     public function index(Request $request, ExcelSurveyReader $reader)
     {
-        // Questions fixes pour chaque panel
-        $questionsLeft  = ['Media', 'Medium', 'Secteur', 'Citée', 'Tonalité'];
-        $questionsRight = ['Media', 'Medium', 'Secteur', 'Citée', 'Tonalité'];
+        $questions = ['Media', 'Medium', 'Secteur', 'Citée', 'Tonalité'];
 
-        // Récupération filtres GET séparés pour chaque panel
-        $yearLeftRaw  = $request->query->get('year_left');
-        $monthLeftRaw = $request->query->get('month_left');
+        // Récupération des filtres
+        $yearLeft   = $request->query->get('year_left');
+        $monthLeft  = $request->query->get('month_left');
+        $yearRight  = $request->query->get('year_right');
+        $monthRight = $request->query->get('month_right');
 
-        $yearRightRaw  = $request->query->get('year_right');
-        $monthRightRaw = $request->query->get('month_right');
+        $selectedYearLeft   = ($yearLeft !== null && $yearLeft !== '') ? (int)$yearLeft : null;
+        $selectedMonthLeft  = ($monthLeft !== null && $monthLeft !== '') ? (int)$monthLeft : null;
+        $selectedYearRight  = ($yearRight !== null && $yearRight !== '') ? (int)$yearRight : null;
+        $selectedMonthRight = ($monthRight !== null && $monthRight !== '') ? (int)$monthRight : null;
 
-        $selectedYearLeft  = ($yearLeftRaw !== null && $yearLeftRaw !== '') ? (int)$yearLeftRaw : null;
-        $selectedMonthLeft = ($monthLeftRaw !== null && $monthLeftRaw !== '') ? (int)$monthLeftRaw : null;
-
-        $selectedYearRight  = ($yearRightRaw !== null && $yearRightRaw !== '') ? (int)$yearRightRaw : null;
-        $selectedMonthRight = ($monthRightRaw !== null && $monthRightRaw !== '') ? (int)$monthRightRaw : null;
-
-        // Mapping mois en nom
         $months = [
             1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril',
             5 => 'Mai', 6 => 'Juin', 7 => 'Juillet', 8 => 'Août',
             9 => 'Septembre', 10 => 'Octobre', 11 => 'Novembre', 12 => 'Décembre'
         ];
 
-        // Résultats panel gauche
-        $resultsLeft = [];
-        foreach ($questionsLeft as $q) {
-            $resultsLeft[$q] = $reader->getQuestionResult($q, $selectedYearLeft, $selectedMonthLeft);
+        $years = $reader->getYears();
+        $dataArray = $reader->getDataArray();
+        $questionsHeaders = $reader->getQuestions();
+        $yearIndex  = array_search('Year', $questionsHeaders, true);
+        $monthIndex = array_search('Month', $questionsHeaders, true);
+
+        // === Résultats panels ===
+        $resultsLeft  = [];
+        $resultsRight = [];
+        foreach ($questions as $q) {
+            $resultsLeft[$q]  = $reader->getQuestionResultFromArray($q, $dataArray, $selectedYearLeft, $selectedMonthLeft);
+            $resultsRight[$q] = $reader->getQuestionResultFromArray($q, $dataArray, $selectedYearRight, $selectedMonthRight);
         }
 
-        // Résultats panel droit
-        $resultsRight = [];
-        foreach ($questionsRight as $q) {
-            $resultsRight[$q] = $reader->getQuestionResult($q, $selectedYearRight, $selectedMonthRight);
-        }
+        // === Monthly totals pour graphe temporel par année ===
+		$monthlyTotalsByYear = [];
+
+		foreach ($dataArray as $row) {
+			$rowYear  = (int)($row[$yearIndex] ?? 0);
+			$rowMonth = (int)($row[$monthIndex] ?? 0);
+
+			if ($rowMonth < 1 || $rowMonth > 12) continue;
+
+			if (!isset($monthlyTotalsByYear[$rowYear])) {
+				$monthlyTotalsByYear[$rowYear] = array_fill(1, 12, 0);
+			}
+
+			$monthlyTotalsByYear[$rowYear][$rowMonth]++;
+		}
 
         return $this->render('dashboard/index.html.twig', [
             'resultsLeft'        => $resultsLeft,
             'resultsRight'       => $resultsRight,
             'months'             => $months,
-            'years'              => $reader->getYears(),
+            'years'              => $years,
             'selectedYearLeft'   => $selectedYearLeft,
             'selectedMonthLeft'  => $selectedMonthLeft,
             'selectedYearRight'  => $selectedYearRight,
             'selectedMonthRight' => $selectedMonthRight,
+            'monthlyTotalsByYear'=> $monthlyTotalsByYear,
         ]);
     }
 }

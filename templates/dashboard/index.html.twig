@@ -6,6 +6,20 @@
 <div class="dashboard">
     <h1>Dashboard Veille Média</h1>
 
+ {# === GRAPHE TEMPOREL MENSUEL PAR ANNÉE === #}
+    {% if monthlyTotalsByYear is not empty %}
+        {% include 'components/chart_line.html.twig' with {
+            id: 'chartMonthlyTotal',
+            monthlyTotalsByYear: monthlyTotalsByYear,
+            months: months
+        } %}
+    {% else %}
+        <div class="panel" style="margin-bottom:30px;">
+            <h2>Évolution mensuelle des réponses</h2>
+            <p>Aucune donnée mensuelle disponible.</p>
+        </div>
+    {% endif %}
+
     <div class="page-container">
 
         {# === PANEL GAUCHE === #}
@@ -13,19 +27,22 @@
             <h2>Panel Gauche</h2>
 
             <form method="get">
-                <label>Mois</label>
-                <select name="month_left" onchange="this.form.submit()">
-                    <option value="">-- Tous --</option>
-                    {% for num, name in months %}
-                        <option value="{{ num }}" {{ num == selectedMonthLeft ? 'selected' : '' }}>{{ name }}</option>
-                    {% endfor %}
-                </select>
+                <input type="hidden" name="year_right" value="{{ selectedYearRight }}">
+                <input type="hidden" name="month_right" value="{{ selectedMonthRight }}">
 
                 <label>Année</label>
                 <select name="year_left" onchange="this.form.submit()">
                     <option value="">-- Tous --</option>
                     {% for y in years %}
                         <option value="{{ y }}" {{ y == selectedYearLeft ? 'selected' : '' }}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+                
+                <label>Mois</label>
+                <select name="month_left" onchange="this.form.submit()">
+                    <option value="">-- Tous --</option>
+                    {% for num, name in months %}
+                        <option value="{{ num }}" {{ num == selectedMonthLeft ? 'selected' : '' }}>{{ name }}</option>
                     {% endfor %}
                 </select>
             </form>
@@ -49,7 +66,6 @@
                         } %}
                     {% endif %}
 
-                    {# KPI sous le graphique #}
                     {% include 'components/kpi.html.twig' with {
                         title: 'Total réponses',
                         value: result.totalResponses
@@ -65,19 +81,22 @@
             <h2>Panel Droit</h2>
 
             <form method="get">
-                <label>Mois</label>
-                <select name="month_right" onchange="this.form.submit()">
-                    <option value="">-- Tous --</option>
-                    {% for num, name in months %}
-                        <option value="{{ num }}" {{ num == selectedMonthRight ? 'selected' : '' }}>{{ name }}</option>
-                    {% endfor %}
-                </select>
+                <input type="hidden" name="year_left" value="{{ selectedYearLeft }}">
+                <input type="hidden" name="month_left" value="{{ selectedMonthLeft }}">
 
                 <label>Année</label>
                 <select name="year_right" onchange="this.form.submit()">
                     <option value="">-- Tous --</option>
                     {% for y in years %}
                         <option value="{{ y }}" {{ y == selectedYearRight ? 'selected' : '' }}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+                
+                <label>Mois</label>
+                <select name="month_right" onchange="this.form.submit()">
+                    <option value="">-- Tous --</option>
+                    {% for num, name in months %}
+                        <option value="{{ num }}" {{ num == selectedMonthRight ? 'selected' : '' }}>{{ name }}</option>
                     {% endfor %}
                 </select>
             </form>
@@ -101,7 +120,6 @@
                         } %}
                     {% endif %}
 
-                    {# KPI sous le graphique #}
                     {% include 'components/kpi.html.twig' with {
                         title: 'Total réponses',
                         value: result.totalResponses

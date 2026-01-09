@@ -9,57 +9,60 @@ Il permet de générer des **KPIs** et des **graphes (bar, doughnut)** pour comp
 
 ### Fonctionnalités principales
 
-- Lecture automatique des questions depuis Excel.
-- Affichage dynamique des résultats par panel gauche/droit.
+- Lecture automatique des questions depuis Excel
+- Affichage dynamique des résultats par panel gauche/droit
 - Graphiques interactifs avec **Chart.js** :
-  - **Doughnut** : pour `Media`, `Citée`, `Tonalité`.
-  - **Bar** : pour `Medium`, `Secteur`.
-- Filtrage par **année** et **mois** indépendamment pour chaque panel.
-- KPIs pour chaque question affichant le **total des réponses**.
+  - **Doughnut** : pour `Media`, `Citée`, `Tonalité`
+  - **Bar** : pour `Medium`, `Secteur`
+- Filtrage par **année** et **mois** indépendamment pour chaque panel
+- KPIs pour chaque question affichant le **total des réponses**
 
 ## Installation
 
-### 1. Cloner le projet
+1. **Cloner le projet**
+
+```bash
 git clone <votre_repo_url>
 cd my_data_visualization_app
+```
 
+2. **Installer les dépendances**
 
-2. Installer les dépendances
-bash
-Copier le code
+```bash
 composer install
-3. Préparer le fichier Excel
-Placez votre fichier Test.xlsx à la racine du projet.
+```
 
-Assurez-vous que les colonnes suivantes existent :
+3. **Préparer le fichier Excel**
 
-Year (année)
+- Placez votre fichier `Test.xlsx` à la racine du projet
+- Assurez-vous que les colonnes suivantes existent :  
+  `Year` (année)  
+  `Month` (mois en chiffre)  
+  `Media`, `Medium`, `Secteur`, `Citée`, `Tonalité`
 
-Month (mois en chiffre)
+4. **Lancer le serveur Symfony**
 
-Media, Medium, Secteur, Citée, Tonalité
-
-4. Lancer le serveur Symfony
-bash
-Copier le code
+```bash
 symfony server:start
-Accédez à l’application via http://127.0.0.1:8000
+```
 
-Utilisation
-Filtres
-Chaque panel possède ses propres filtres Année et Mois.
+- Accédez à l’application via [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
-Par défaut, la totalité des données est affichée (sans filtre).
+## Utilisation
 
-Graphiques
-Les questions Media, Citée, Tonalité sont représentées en doughnut.
+### Filtres
 
-Les questions Medium, Secteur sont représentées en bar.
+Chaque panel possède ses propres filtres **Année** et **Mois**.  
+Par défaut, toutes les données sont affichées (sans filtre).
 
-Exemple d’intégration HTML d’un graphique (Panel Gauche) :
+### Graphiques
 
-html
-Copier le code
+- `Media`, `Citée`, `Tonalité` → **doughnut**  
+- `Medium`, `Secteur` → **bar**
+
+#### Exemple HTML d’un graphique (Panel Gauche)
+
+```html
 <div class="chart-container" style="width:100%; height:300px;">
   <canvas id="chartLeft1"></canvas>
 </div>
@@ -91,18 +94,22 @@ new Chart(ctx, {
     plugins: [ChartDataLabels]
 });
 </script>
-KPI
+```
+
+### KPI
+
 Chaque question affiche un total de réponses :
 
-twig
-Copier le code
+```twig
 {% include 'components/kpi.html.twig' with {
     title: 'Total réponses',
     value: result.totalResponses
 } %}
-Structure du projet
-text
-Copier le code
+```
+
+## Structure du projet
+
+```
 my_data_visualization_app/
 ├─ src/
 │  ├─ Controller/DataVisualizationController.php
@@ -118,31 +125,36 @@ my_data_visualization_app/
 ├─ Test.xlsx
 ├─ composer.json
 └─ README.md
-Dépendances principales
-Symfony 6+
+```
 
-PhpSpreadsheet (lecture Excel)
+## Dépendances principales
 
-Chart.js (graphiques interactifs)
+- Symfony 6+
+- PhpSpreadsheet (lecture Excel)
+- Chart.js (graphiques interactifs)
+- chartjs-plugin-datalabels (pour afficher les pourcentages sur les graphiques)
 
-chartjs-plugin-datalabels (pour afficher les pourcentages sur les graphiques)
+## Contribuer
 
-Contribuer
-Créez une branche pour votre fonctionnalité :
+1. **Créez une branche pour votre fonctionnalité**
 
-bash
-Copier le code
+```bash
 git checkout -b feature/ma-nouvelle-fonction
-Faites vos modifications et committez :
+```
 
-bash
-Copier le code
+2. **Faites vos modifications et committez**
+
+```bash
 git add .
 git commit -m "Ajout de la fonctionnalité XYZ"
-Poussez votre branche :
+```
 
-bash
-Copier le code
+3. **Poussez votre branche**
+
+```bash
 git push origin feature/ma-nouvelle-fonction
-Licence
+```
+
+## Licence
+
 MIT License © 2026

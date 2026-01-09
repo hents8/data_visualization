@@ -125,6 +125,21 @@
             width: 100% !important;
             height: 300px;
         }
+		
+		.temporal-chart {
+			max-width: 100%;
+			width: calc(100% - 24px); /* même gap que page-container */
+			margin: 0 auto 30px auto; /* centré horizontalement et marge-bottom */
+			background: #fff;
+			padding: 30px 20px;
+			border-radius: 8px;
+			box-shadow: 0 4px 12px rgba(0,0,0,.08);
+		}
+
+
+		.temporal-chart canvas {
+			height: 400px;
+		}
 
     </style>
     {% endblock %}
