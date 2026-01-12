@@ -19,6 +19,21 @@
             <p>Aucune donnée mensuelle disponible.</p>
         </div>
     {% endif %}
+	
+	{% if tonalitesTimeline is not empty %}
+		{% include 'components/chart_line_tonality.html.twig' with {
+			id: 'chartTonalityEvolution',
+			tonalityByYearMonth: tonalitesTimeline,
+			tonaliteLabels: tonaliteLabels
+		} %}
+	{% else %}
+        <div class="panel" style="margin-bottom:30px;">
+            <h2>Évolution des tonalités dans le temps</h2>
+            <p>Aucune donnée mensuelle disponible.</p>
+        </div>
+	{% endif %}
+
+
 
     <div class="page-container">
 

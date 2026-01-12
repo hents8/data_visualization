@@ -1,5 +1,7 @@
 <div class="temporal-chart">
-    <h2>Évolution mensuelle des réponses</h2>
+    <div class="temporal-chart-header">
+        <h2>Évolution mensuelle des réponses</h2>
+    </div>
     <canvas id="{{ id }}"></canvas>
 </div>
 
@@ -37,6 +39,12 @@ document.addEventListener('DOMContentLoaded', function () {
         data: { labels, datasets },
         options: {
             responsive: true,
+			maintainAspectRatio: false,
+			layout: {
+				padding: {
+					bottom: 8
+				}
+			},
             plugins: { 
                 legend: { position: 'top' }, 
                 tooltip: { mode: 'index', intersect: false } 

@@ -35,7 +35,9 @@ class DataVisualizationController extends AbstractController
         $questionsHeaders = $reader->getQuestions();
         $yearIndex  = array_search('Year', $questionsHeaders, true);
         $monthIndex = array_search('Month', $questionsHeaders, true);
-
+		$dateIndex = array_search('Date', $questionsHeaders, true);
+		$tonaliteIndex = array_search('Tonalité', $questionsHeaders, true);
+		
         // === Résultats panels ===
         $resultsLeft  = [];
         $resultsRight = [];
@@ -59,6 +61,38 @@ class DataVisualizationController extends AbstractController
 
 			$monthlyTotalsByYear[$rowYear][$rowMonth]++;
 		}
+		
+		// === Évolution des tonalités par mois et par année ===
+		$tonalitesTimeline = []; // ['2021-01' => ['Positive' => 5, 'Négative' => 2, ...], ...]
+		$tonaliteLabels = [];    // Toutes les tonalités existantes
+
+		foreach ($dataArray as $row) {
+			$dateStr = $row[$dateIndex] ?? null;
+			$tonalite = $row[$tonaliteIndex] ?? null;
+
+			if (!$dateStr || !$tonalite) continue;
+
+			$timestamp = strtotime($dateStr);
+			if ($timestamp === false) continue;
+
+			$monthKey = date('Y-m', $timestamp); // '2021-01', '2022-10', etc.
+
+			if (!isset($tonalitesTimeline[$monthKey])) {
+				$tonalitesTimeline[$monthKey] = [];
+			}
+
+			if (!isset($tonalitesTimeline[$monthKey][$tonalite])) {
+				$tonalitesTimeline[$monthKey][$tonalite] = 0;
+			}
+
+			$tonalitesTimeline[$monthKey][$tonalite]++;
+
+			// Collecte de toutes les tonalités
+			if (!in_array($tonalite, $tonaliteLabels, true)) {
+				$tonaliteLabels[] = $tonalite;
+			}
+		}
+
 
         return $this->render('dashboard/index.html.twig', [
             'resultsLeft'        => $resultsLeft,
@@ -70,6 +104,8 @@ class DataVisualizationController extends AbstractController
             'selectedYearRight'  => $selectedYearRight,
             'selectedMonthRight' => $selectedMonthRight,
             'monthlyTotalsByYear'=> $monthlyTotalsByYear,
+			'tonalitesTimeline' => $tonalitesTimeline,
+			'tonaliteLabels' => $tonaliteLabels,
         ]);
     }
 }
