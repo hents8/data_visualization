@@ -165,6 +165,33 @@
     {% block javascripts %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<script>
+    function colorFromLabel(label, alpha = 1) {
+        if (!label) return `rgba(200,200,200,${alpha})`;
+
+        let hash = 0;
+        for (let i = 0; i < label.length; i++) {
+            hash = label.charCodeAt(i) + ((hash << 5) - hash);
+        }
+
+        const hue = Math.abs(hash) % 360;
+        return `hsla(${hue}, 65%, 50%, ${alpha})`;
+    }
+
+    const COLOR_MAP = {
+        'Positif': '46, 204, 113',
+        'Neutre': '241, 196, 15',
+        'Négatif': '231, 76, 60'
+    };
+
+    function getColor(label, alpha = 1) {
+        if (COLOR_MAP[label]) {
+            return `rgba(${COLOR_MAP[label]}, ${alpha})`;
+        }
+        return colorFromLabel(label, alpha);
+    }
+</script>
+
     {% endblock %}
 </body>
 </html>

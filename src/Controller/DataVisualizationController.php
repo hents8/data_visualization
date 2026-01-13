@@ -66,34 +66,49 @@ class DataVisualizationController extends AbstractController
 		$tonalitesTimeline = []; // ['2021-01' => ['Positive' => 5, 'Négative' => 2, ...], ...]
 		$tonaliteLabels = [];    // Toutes les tonalités existantes
 
-		foreach ($dataArray as $row) {
-			$dateStr = $row[$dateIndex] ?? null;
+			foreach ($dataArray as $row) {
+
+			$dateRaw  = $row[$dateIndex] ?? null;
 			$tonalite = $row[$tonaliteIndex] ?? null;
 
-			if (!$dateStr || !$tonalite) continue;
+			if (!$dateRaw || !$tonalite) {
+				continue;
+			}
 
-			$timestamp = strtotime($dateStr);
-			if ($timestamp === false) continue;
+			// --- Conversion date Excel ou texte ---
+			if (is_numeric($dateRaw)) {
+				// Date Excel (nombre)
+				$timestamp = ($dateRaw - 25569) * 86400;
+			} else {
+				// Date texte classique
+				$timestamp = strtotime($dateRaw);
+			}
 
-			$monthKey = date('Y-m', $timestamp); // '2021-01', '2022-10', etc.
+			if (!$timestamp) {
+				continue;
+			}
 
+			$monthKey = date('Y-m', $timestamp); // ex: 2021-01, 2022-10
+
+			// Initialisation du mois
 			if (!isset($tonalitesTimeline[$monthKey])) {
 				$tonalitesTimeline[$monthKey] = [];
 			}
 
+			// Initialisation de la tonalité
 			if (!isset($tonalitesTimeline[$monthKey][$tonalite])) {
 				$tonalitesTimeline[$monthKey][$tonalite] = 0;
 			}
 
+			// Incrément
 			$tonalitesTimeline[$monthKey][$tonalite]++;
 
-			// Collecte de toutes les tonalités
+			// Liste unique des tonalités
 			if (!in_array($tonalite, $tonaliteLabels, true)) {
 				$tonaliteLabels[] = $tonalite;
 			}
 		}
-
-
+		ksort($tonalitesTimeline);
         return $this->render('dashboard/index.html.twig', [
             'resultsLeft'        => $resultsLeft,
             'resultsRight'       => $resultsRight,
