@@ -1,0 +1,72 @@
+<div class="chart-container" style="height:360px; margin-bottom:30px;">
+    <canvas id="{{ id }}"></canvas>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('{{ id }}');
+    if (!canvas || !window.Chart) return;
+
+    const labels = {{ mediaLabels|json_encode|raw }};
+    const rawDatasets = {{ tonaliteDatasets|json_encode|raw }};
+
+    const datasets = rawDatasets.map(ds => ({
+        label: ds.label,
+        data: ds.data,
+        backgroundColor: getColor(ds.label, 0.7),
+        borderColor: getColor(ds.label, 1),
+        borderWidth: 1,
+        borderRadius: 6,
+        stack: 'tonalite'
+    }));
+
+    new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y', // ✅ horizontal
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label(context) {
+                            const value = context.raw;
+                            const total = context.chart.data.datasets
+                                .map(ds => ds.data[context.dataIndex])
+                                .reduce((a, b) => a + b, 0);
+
+                            const percent = total
+                                ? ((value / total) * 100).toFixed(1)
+                                : 0;
+
+                            return `${context.dataset.label} : ${value} (${percent}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                },
+                y: {
+                    stacked: true,
+                    ticks: {
+                        font: { size: 11 }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>

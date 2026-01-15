@@ -35,8 +35,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: function (ctx) {
-                            return `${ctx.label} : ${ctx.raw}`;
+                        label: function (context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const value = context.raw;
+                            const percent = total
+                                ? ((value / total) * 100).toFixed(1)
+                                : 0;
+                            return `${context.label} : ${value} (${percent}%)`;
                         }
                     }
                 }

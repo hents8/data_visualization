@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controller;
 
 use App\Service\ExcelSurveyReader;
@@ -13,16 +14,13 @@ class DataVisualizationController extends AbstractController
     {
         $questions = ['Media', 'Medium', 'Secteur', 'Citée', 'Tonalité'];
 
-        // Récupération des filtres
-        $yearLeft   = $request->query->get('year_left');
-        $monthLeft  = $request->query->get('month_left');
-        $yearRight  = $request->query->get('year_right');
-        $monthRight = $request->query->get('month_right');
-
-        $selectedYearLeft   = ($yearLeft !== null && $yearLeft !== '') ? (int)$yearLeft : null;
-        $selectedMonthLeft  = ($monthLeft !== null && $monthLeft !== '') ? (int)$monthLeft : null;
-        $selectedYearRight  = ($yearRight !== null && $yearRight !== '') ? (int)$yearRight : null;
-        $selectedMonthRight = ($monthRight !== null && $monthRight !== '') ? (int)$monthRight : null;
+        /* =======================
+         * Filtres panels
+         * ======================= */
+        $selectedYearLeft   = $request->query->get('year_left')  !== '' ? (int)$request->query->get('year_left')  : null;
+        $selectedMonthLeft  = $request->query->get('month_left') !== '' ? (int)$request->query->get('month_left') : null;
+        $selectedYearRight  = $request->query->get('year_right') !== '' ? (int)$request->query->get('year_right') : null;
+        $selectedMonthRight = $request->query->get('month_right')!== '' ? (int)$request->query->get('month_right'): null;
 
         $months = [
             1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril',
@@ -30,85 +28,115 @@ class DataVisualizationController extends AbstractController
             9 => 'Septembre', 10 => 'Octobre', 11 => 'Novembre', 12 => 'Décembre'
         ];
 
-        $years = $reader->getYears();
-        $dataArray = $reader->getDataArray();
-        $questionsHeaders = $reader->getQuestions();
-        $yearIndex  = array_search('Year', $questionsHeaders, true);
-        $monthIndex = array_search('Month', $questionsHeaders, true);
-		$dateIndex = array_search('Date', $questionsHeaders, true);
-		$tonaliteIndex = array_search('Tonalité', $questionsHeaders, true);
-		
-        // === Résultats panels ===
-        $resultsLeft  = [];
-        $resultsRight = [];
+        $years            = $reader->getYears();
+        $dataArray        = $reader->getDataArray();
+        $headers          = $reader->getQuestions();
+
+        $yearIndex     = array_search('Year', $headers, true);
+        $monthIndex    = array_search('Month', $headers, true);
+        $dateIndex     = array_search('Date', $headers, true);
+        $tonaliteIndex = array_search('Tonalité', $headers, true);
+        $mediaIndex    = array_search('Media', $headers, true);
+
+        /* =======================
+         * Résultats panels
+         * ======================= */
+        $resultsLeft = $resultsRight = [];
         foreach ($questions as $q) {
-            $resultsLeft[$q]  = $reader->getQuestionResultFromArray($q, $dataArray, $selectedYearLeft, $selectedMonthLeft);
+            $resultsLeft[$q]  = $reader->getQuestionResultFromArray($q, $dataArray, $selectedYearLeft,  $selectedMonthLeft);
             $resultsRight[$q] = $reader->getQuestionResultFromArray($q, $dataArray, $selectedYearRight, $selectedMonthRight);
         }
 
-        // === Monthly totals pour graphe temporel par année ===
-		$monthlyTotalsByYear = [];
+        /* =======================
+         * Totaux mensuels par année
+         * ======================= */
+        $monthlyTotalsByYear = [];
 
-		foreach ($dataArray as $row) {
-			$rowYear  = (int)($row[$yearIndex] ?? 0);
-			$rowMonth = (int)($row[$monthIndex] ?? 0);
+        foreach ($dataArray as $row) {
+            $y = (int)($row[$yearIndex] ?? 0);
+            $m = (int)($row[$monthIndex] ?? 0);
 
-			if ($rowMonth < 1 || $rowMonth > 12) continue;
+            if ($m < 1 || $m > 12) continue;
 
-			if (!isset($monthlyTotalsByYear[$rowYear])) {
-				$monthlyTotalsByYear[$rowYear] = array_fill(1, 12, 0);
-			}
+            $monthlyTotalsByYear[$y] ??= array_fill(1, 12, 0);
+            $monthlyTotalsByYear[$y][$m]++;
+        }
 
-			$monthlyTotalsByYear[$rowYear][$rowMonth]++;
-		}
-		
-		// === Évolution des tonalités par mois et par année ===
-		$tonalitesTimeline = []; // ['2021-01' => ['Positive' => 5, 'Négative' => 2, ...], ...]
-		$tonaliteLabels = [];    // Toutes les tonalités existantes
+        /* =======================
+         * Timeline tonalité
+         * ======================= */
+        $tonalitesTimeline = [];
+        $tonaliteLabels   = [];
 
-			foreach ($dataArray as $row) {
+        foreach ($dataArray as $row) {
+            $dateRaw  = $row[$dateIndex] ?? null;
+            $tonalite = $row[$tonaliteIndex] ?? null;
+            if (!$dateRaw || !$tonalite) continue;
 
-			$dateRaw  = $row[$dateIndex] ?? null;
-			$tonalite = $row[$tonaliteIndex] ?? null;
+            $timestamp = is_numeric($dateRaw)
+                ? ($dateRaw - 25569) * 86400
+                : strtotime($dateRaw);
 
-			if (!$dateRaw || !$tonalite) {
-				continue;
-			}
+            if (!$timestamp) continue;
 
-			// --- Conversion date Excel ou texte ---
-			if (is_numeric($dateRaw)) {
-				// Date Excel (nombre)
-				$timestamp = ($dateRaw - 25569) * 86400;
-			} else {
-				// Date texte classique
-				$timestamp = strtotime($dateRaw);
-			}
+            $key = date('Y-m', $timestamp);
+            $tonalitesTimeline[$key][$tonalite] = ($tonalitesTimeline[$key][$tonalite] ?? 0) + 1;
 
-			if (!$timestamp) {
-				continue;
-			}
+            if (!in_array($tonalite, $tonaliteLabels, true)) {
+                $tonaliteLabels[] = $tonalite;
+            }
+        }
 
-			$monthKey = date('Y-m', $timestamp); // ex: 2021-01, 2022-10
+        ksort($tonalitesTimeline);
 
-			// Initialisation du mois
-			if (!isset($tonalitesTimeline[$monthKey])) {
-				$tonalitesTimeline[$monthKey] = [];
-			}
+        /* =======================
+         * Media × Tonalité (par panel)
+         * ======================= */
+        $buildMediaTonalite = function (?int $year, ?int $month) use (
+            $dataArray, $yearIndex, $monthIndex, $mediaIndex, $tonaliteIndex
+        ) {
+            $counts = [];
+            $mediaLabels = [];
+            $tonaliteLabels = [];
 
-			// Initialisation de la tonalité
-			if (!isset($tonalitesTimeline[$monthKey][$tonalite])) {
-				$tonalitesTimeline[$monthKey][$tonalite] = 0;
-			}
+            foreach ($dataArray as $row) {
+                if ($year !== null  && (int)$row[$yearIndex]  !== $year)  continue;
+                if ($month !== null && (int)$row[$monthIndex] !== $month) continue;
 
-			// Incrément
-			$tonalitesTimeline[$monthKey][$tonalite]++;
+                $media    = $row[$mediaIndex] ?? null;
+                $tonalite = $row[$tonaliteIndex] ?? null;
+                if (!$media || !$tonalite) continue;
 
-			// Liste unique des tonalités
-			if (!in_array($tonalite, $tonaliteLabels, true)) {
-				$tonaliteLabels[] = $tonalite;
-			}
-		}
-		ksort($tonalitesTimeline);
+                $counts[$media][$tonalite] = ($counts[$media][$tonalite] ?? 0) + 1;
+
+                if (!in_array($media, $mediaLabels, true)) {
+                    $mediaLabels[] = $media;
+                }
+                if (!in_array($tonalite, $tonaliteLabels, true)) {
+                    $tonaliteLabels[] = $tonalite;
+                }
+            }
+
+            $datasets = [];
+            foreach ($tonaliteLabels as $tonalite) {
+                $datasets[] = [
+                    'label' => $tonalite,
+                    'data'  => array_map(
+                        fn($media) => $counts[$media][$tonalite] ?? 0,
+                        $mediaLabels
+                    )
+                ];
+            }
+
+            return [$mediaLabels, $datasets];
+        };
+
+        [$mediaLabelsLeft,  $mediaTonaliteDatasetsLeft]  = $buildMediaTonalite($selectedYearLeft,  $selectedMonthLeft);
+        [$mediaLabelsRight, $mediaTonaliteDatasetsRight] = $buildMediaTonalite($selectedYearRight, $selectedMonthRight);
+
+        /* =======================
+         * Render
+         * ======================= */
         return $this->render('dashboard/index.html.twig', [
             'resultsLeft'        => $resultsLeft,
             'resultsRight'       => $resultsRight,
@@ -118,9 +146,16 @@ class DataVisualizationController extends AbstractController
             'selectedMonthLeft'  => $selectedMonthLeft,
             'selectedYearRight'  => $selectedYearRight,
             'selectedMonthRight' => $selectedMonthRight,
+
             'monthlyTotalsByYear'=> $monthlyTotalsByYear,
-			'tonalitesTimeline' => $tonalitesTimeline,
-			'tonaliteLabels' => $tonaliteLabels,
+            'tonalitesTimeline'  => $tonalitesTimeline,
+            'tonaliteLabels'     => $tonaliteLabels,
+
+            /* Media × Tonalité */
+            'mediaLabelsLeft'            => $mediaLabelsLeft,
+            'mediaTonaliteDatasetsLeft'  => $mediaTonaliteDatasetsLeft,
+            'mediaLabelsRight'           => $mediaLabelsRight,
+            'mediaTonaliteDatasetsRight' => $mediaTonaliteDatasetsRight,
         ]);
     }
 }

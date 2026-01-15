@@ -89,6 +89,34 @@
                     <p>Aucune donnée pour cette sélection.</p>
                 {% endif %}
             {% endfor %}
+			
+		{% if mediaTonaliteDatasetsLeft is not empty %}
+			
+				<h3>Media × Tonalité</h3>
+
+				{% include 'components/chart_stacked_tona_media.html.twig' with {
+					id: 'mediaTonaliteLeft',
+					mediaLabels: mediaLabelsLeft,
+					tonaliteDatasets: mediaTonaliteDatasetsLeft
+				} %}
+
+				{% set totalMediaTonalite = 0 %}
+				{% for ds in mediaTonaliteDatasetsLeft %}
+					{% for value in ds.data %}
+						{% set totalMediaTonalite = totalMediaTonalite + value %}
+					{% endfor %}
+				{% endfor %}
+
+				{% include 'components/kpi.html.twig' with {
+					title: 'Total réponses',
+					value: totalMediaTonalite
+				} %}
+			
+		{% else %}
+			<p>Aucune donnée Media × Tonalité pour cette sélection.</p>
+		{% endif %}
+
+			
         </section>
 
         {# === PANEL DROIT === #}
@@ -143,6 +171,32 @@
                     <p>Aucune donnée pour cette sélection.</p>
                 {% endif %}
             {% endfor %}
+			
+			{% if mediaTonaliteDatasetsRight is not empty %}
+			
+				<h3>Media × Tonalité</h3>
+
+				{% include 'components/chart_stacked_tona_media.html.twig' with {
+					id: 'mediaTonaliteRight',
+					mediaLabels: mediaLabelsRight,
+					tonaliteDatasets: mediaTonaliteDatasetsRight
+				} %}
+
+				{% set totalMediaTonalite = 0 %}
+				{% for ds in mediaTonaliteDatasetsRight %}
+					{% for value in ds.data %}
+						{% set totalMediaTonalite = totalMediaTonalite + value %}
+					{% endfor %}
+				{% endfor %}
+
+				{% include 'components/kpi.html.twig' with {
+					title: 'Total réponses',
+					value: totalMediaTonalite
+				} %}
+			
+		{% else %}
+			<p>Aucune donnée Media × Tonalité pour cette sélection.</p>
+		{% endif %}
         </section>
 
     </div>
